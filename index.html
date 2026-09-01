@@ -3,92 +3,230 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Juntar PDFs</title>
+<title>67PDFs - Ferramentas de PDF</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Bibliotecas -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
+
 <style>
   :root {
-    --bg: #f5f4f0;
-    --panel: #ffffff;
-    --ink: #1c1b19;
-    --muted: #6b6863;
-    --accent: #c1440e;
-    --accent-dark: #9c360a;
-    --border: #e3e0d8;
+    --paper: #EDE9DE;
+    --paper-white: #FFFDF8;
+    --ink: #211F1A;
+    --ink-soft: #6E695E;
+    --rule: #DBD4C2;
+    --stamp: #22436B;
+    --stamp-dark: #17304E;
+    --stamp-tint: #E7ECF2;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: var(--bg);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(33,31,26,0.05) 1px, transparent 0);
+    background-size: 22px 22px;
     color: var(--ink);
     min-height: 100vh;
-    padding: 32px 16px;
+    padding: 40px 16px 64px;
   }
   .wrap {
     max-width: 760px;
     margin: 0 auto;
   }
+
+  /* Brand */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+  .stamp-mark {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: 2px solid var(--stamp);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+    transform: rotate(-7deg);
+  }
+  .stamp-mark::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px dashed var(--stamp);
+    border-radius: 50%;
+    opacity: .55;
+  }
+  .stamp-mark span {
+    font-family: 'Newsreader', serif;
+    font-weight: 600;
+    font-size: 19px;
+    color: var(--stamp);
+  }
   h1 {
-    font-size: 28px;
-    margin: 0 0 4px;
-    letter-spacing: -0.02em;
+    font-family: 'Newsreader', serif;
+    font-weight: 600;
+    font-size: 30px;
+    margin: 0;
+    letter-spacing: -0.01em;
+    color: var(--ink);
   }
   .sub {
-    color: var(--muted);
-    margin: 0 0 28px;
-    font-size: 15px;
+    color: var(--ink-soft);
+    margin: 0 0 26px;
+    font-size: 14.5px;
+    line-height: 1.5;
+    max-width: 52ch;
   }
+
+  /* Folder tabs */
+  .tabs-row {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 2px;
+  }
+  .tabs-row::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    font-family: 'Inter', sans-serif;
+    border: 1px solid var(--rule);
+    border-bottom: none;
+    background: #E2DBC8;
+    color: var(--ink-soft);
+    border-radius: 9px 9px 0 0;
+    padding: 11px 15px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background .12s, color .12s;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active {
+    background: var(--paper-white);
+    color: var(--stamp);
+    position: relative;
+    z-index: 3;
+  }
+
+  /* Stacked-paper card */
+  .page-stack {
+    position: relative;
+    margin-top: -1px;
+  }
+  .page-stack::before,
+  .page-stack::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--paper-white);
+    border: 1px solid var(--rule);
+    border-radius: 4px 14px 14px 14px;
+  }
+  .page-stack::before { transform: rotate(-0.9deg) translate(3px, 6px); z-index: 1; }
+  .page-stack::after { transform: rotate(0.7deg) translate(-4px, 10px); z-index: 0; }
+  .page-card {
+    position: relative;
+    z-index: 2;
+    background: var(--paper-white);
+    border: 1px solid var(--rule);
+    border-radius: 4px 14px 14px 14px;
+    padding: 26px 22px 24px;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .tool-desc {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin: 0 0 20px;
+    line-height: 1.55;
+    max-width: 62ch;
+  }
+
   .drop {
-    background: var(--panel);
-    border: 2px dashed var(--border);
-    border-radius: 14px;
-    padding: 40px 20px;
+    background: var(--paper-white);
+    border: 1.5px dashed var(--rule);
+    border-radius: 12px;
+    padding: 34px 20px;
     text-align: center;
     cursor: pointer;
     transition: border-color .15s, background .15s;
   }
   .drop.drag {
-    border-color: var(--accent);
-    background: #fff6f0;
+    border-color: var(--stamp);
+    background: var(--stamp-tint);
   }
-  .drop p { margin: 6px 0; }
-  .drop .big { font-size: 16px; font-weight: 600; }
-  .drop .small { font-size: 13px; color: var(--muted); }
+  .drop .icon {
+    width: 30px;
+    height: 30px;
+    margin: 0 auto 12px;
+    color: var(--ink-soft);
+  }
+  .drop .icon svg { width: 100%; height: 100%; display: block; }
+  .drop.drag .icon { color: var(--stamp); }
+  .drop p { margin: 5px 0; }
+  .drop .big { font-size: 15.5px; font-weight: 600; }
+  .drop .small { font-size: 13px; color: var(--ink-soft); }
   input[type=file] { display: none; }
 
   .list {
-    margin-top: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    margin-top: 22px;
+    border-top: 1px solid var(--rule);
   }
   .item {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 12px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    padding: 11px 2px;
+    border-bottom: 1px solid var(--rule);
   }
   .item .handle {
     cursor: grab;
-    color: var(--muted);
-    font-size: 18px;
+    color: var(--ink-soft);
+    font-size: 17px;
     user-select: none;
+    flex-shrink: 0;
   }
   .item .idx {
-    font-size: 12px;
-    color: #fff;
-    background: var(--accent);
+    font-family: 'Newsreader', serif;
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--stamp);
+    background: var(--stamp-tint);
     border-radius: 50%;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
+  .item .doc-icon {
+    color: var(--ink-soft);
+    flex-shrink: 0;
+    display: flex;
+  }
+  .item .doc-icon svg { width: 16px; height: 20px; }
   .item .name {
     flex: 1;
     font-size: 14px;
@@ -98,19 +236,50 @@
   }
   .item .pages {
     font-size: 12px;
-    color: var(--muted);
+    color: var(--ink-soft);
     flex-shrink: 0;
   }
   .item button.rm {
     border: none;
     background: none;
-    color: var(--muted);
+    color: var(--ink-soft);
     cursor: pointer;
     font-size: 16px;
     padding: 2px 6px;
+    line-height: 1;
   }
-  .item button.rm:hover { color: var(--accent); }
+  .item button.rm:hover { color: var(--stamp); }
   .item.dragging { opacity: 0.4; }
+
+  /* Segmented quality control */
+  .quality-group {
+    margin-top: 20px;
+    display: flex;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--paper);
+  }
+  .quality-opt {
+    flex: 1;
+    text-align: center;
+    padding: 10px 6px;
+    cursor: pointer;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    transition: background .12s, color .12s;
+  }
+  .quality-opt input { position: absolute; opacity: 0; pointer-events: none; }
+  .quality-opt:has(input:checked) {
+    background: var(--stamp);
+    color: #fff;
+  }
+  .quality-hint {
+    margin: 8px 2px 0;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
 
   .actions {
     margin-top: 24px;
@@ -119,208 +288,724 @@
     flex-wrap: wrap;
   }
   button.primary {
-    background: var(--accent);
+    background: var(--stamp);
     color: #fff;
     border: none;
-    border-radius: 10px;
+    border-radius: 9px;
     padding: 13px 22px;
     font-size: 15px;
     font-weight: 600;
+    font-family: 'Inter', sans-serif;
     cursor: pointer;
     flex: 1;
+    transition: background .12s;
   }
-  button.primary:hover { background: var(--accent-dark); }
-  button.primary:disabled { background: #cfcdc7; cursor: not-allowed; }
+  button.primary:hover { background: var(--stamp-dark); }
+  button.primary:disabled { background: #D6D1C4; cursor: not-allowed; }
   button.secondary {
     background: none;
-    border: 1px solid var(--border);
-    border-radius: 10px;
+    border: 1px solid var(--rule);
+    border-radius: 9px;
     padding: 13px 18px;
     font-size: 14px;
+    font-family: 'Inter', sans-serif;
     cursor: pointer;
     color: var(--ink);
   }
-  button.secondary:hover { border-color: var(--muted); }
+  button.secondary:hover { border-color: var(--ink-soft); }
 
   .status {
     margin-top: 14px;
     font-size: 13px;
-    color: var(--muted);
+    color: var(--ink-soft);
     min-height: 18px;
   }
-  .status.err { color: var(--accent); }
+  .status.err { color: #A13A2B; }
 
   .footer-note {
-    margin-top: 36px;
+    margin-top: 30px;
     font-size: 12px;
-    color: var(--muted);
+    color: var(--ink-soft);
     line-height: 1.5;
+    text-align: center;
+  }
+
+  @media (max-width: 480px) {
+    .page-card { padding: 20px 16px; }
+    .tab-btn { padding: 10px 12px; font-size: 12.5px; }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>67PDFs - Juntar PDFS</h1>
-  <p class="sub">Sem limite de arquivos.</p>
+  <div class="brand">
+    <div class="stamp-mark"><span>67</span></div>
+    <h1>PDFs</h1>
+  </div>
+  <p class="sub">Junte, converta e comprima PDFs. Tudo roda no seu navegador — os arquivos não são enviados a nenhum servidor.</p>
 
-  <div class="drop" id="drop">
-    <p class="big">Arraste seus PDFs aqui</p>
-    <p class="small">ou clique para escolher os arquivos</p>
-    <input type="file" id="fileInput" accept="application/pdf" multiple>
+  <div class="tabs-row" id="tabs">
+    <button class="tab-btn active" data-tab="merge">Juntar PDFs</button>
+    <button class="tab-btn" data-tab="pdf2word">PDF → Word</button>
+    <button class="tab-btn" data-tab="pdf2excel">PDF → Excel</button>
+    <button class="tab-btn" data-tab="word2pdf">Word → PDF</button>
+    <button class="tab-btn" data-tab="excel2pdf">Excel → PDF</button>
+    <button class="tab-btn" data-tab="compress">Comprimir PDF</button>
   </div>
 
-  <div class="list" id="list"></div>
+  <div class="page-stack">
+  <div class="page-card">
 
-  <div class="actions" id="actions" style="display:none">
-    <button class="secondary" id="clearBtn">Limpar tudo</button>
-    <button class="primary" id="mergeBtn">Juntar e baixar PDF</button>
+  <!-- ============ MERGE (original) ============ -->
+  <div class="panel active" id="panel-merge">
+    <p class="tool-desc">Sem limite de arquivos. Arraste os itens da lista (☰) para reordenar antes de juntar.</p>
+
+    <div class="drop" id="drop-merge">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15V4M12 4L7 9M12 4l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <p class="big">Arraste seus PDFs aqui</p>
+      <p class="small">ou clique para escolher os arquivos</p>
+      <input type="file" id="file-merge" accept="application/pdf" multiple>
+    </div>
+
+    <div class="list" id="list-merge"></div>
+
+    <div class="actions" id="actions-merge" style="display:none">
+      <button class="secondary" id="clear-merge">Limpar tudo</button>
+      <button class="primary" id="btn-merge">Juntar e baixar PDF</button>
+    </div>
+
+    <div class="status" id="status-merge"></div>
   </div>
 
-  <div class="status" id="status"></div>
+  <!-- ============ PDF -> WORD ============ -->
+  <div class="panel" id="panel-pdf2word">
+    <p class="tool-desc">Extrai o texto de cada página do PDF e monta um documento .docx editável. Funciona bem para PDFs com texto normal; PDFs escaneados (imagem) não têm texto para extrair. A formatação original (colunas, imagens, layout exato) não é preservada — só o texto.</p>
+
+    <div class="drop" id="drop-pdf2word">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15V4M12 4L7 9M12 4l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <p class="big">Arraste seus PDFs aqui</p>
+      <p class="small">ou clique para escolher os arquivos</p>
+      <input type="file" id="file-pdf2word" accept="application/pdf" multiple>
+    </div>
+
+    <div class="list" id="list-pdf2word"></div>
+
+    <div class="actions" id="actions-pdf2word" style="display:none">
+      <button class="secondary" id="clear-pdf2word">Limpar tudo</button>
+      <button class="primary" id="btn-pdf2word">Converter para Word</button>
+    </div>
+
+    <div class="status" id="status-pdf2word"></div>
+  </div>
+
+  <!-- ============ PDF -> EXCEL ============ -->
+  <div class="panel" id="panel-pdf2excel">
+    <p class="tool-desc">Tenta reconstruir tabelas a partir do texto do PDF, uma planilha por página. Funciona melhor com PDFs que já têm dados bem alinhados em colunas (relatórios, extratos); textos corridos viram uma coluna só. Não funciona com PDFs escaneados.</p>
+
+    <div class="drop" id="drop-pdf2excel">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15V4M12 4L7 9M12 4l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <p class="big">Arraste seus PDFs aqui</p>
+      <p class="small">ou clique para escolher os arquivos</p>
+      <input type="file" id="file-pdf2excel" accept="application/pdf" multiple>
+    </div>
+
+    <div class="list" id="list-pdf2excel"></div>
+
+    <div class="actions" id="actions-pdf2excel" style="display:none">
+      <button class="secondary" id="clear-pdf2excel">Limpar tudo</button>
+      <button class="primary" id="btn-pdf2excel">Converter para Excel</button>
+    </div>
+
+    <div class="status" id="status-pdf2excel"></div>
+  </div>
+
+  <!-- ============ WORD -> PDF ============ -->
+  <div class="panel" id="panel-word2pdf">
+    <p class="tool-desc">Converte arquivos .docx em PDF. Formatação básica (títulos, negrito, listas, tabelas simples) é preservada; layouts muito complexos podem variar um pouco.</p>
+
+    <div class="drop" id="drop-word2pdf">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15V4M12 4L7 9M12 4l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <p class="big">Arraste seus arquivos Word aqui</p>
+      <p class="small">ou clique para escolher os arquivos (.docx)</p>
+      <input type="file" id="file-word2pdf" accept=".docx" multiple>
+    </div>
+
+    <div class="list" id="list-word2pdf"></div>
+
+    <div class="actions" id="actions-word2pdf" style="display:none">
+      <button class="secondary" id="clear-word2pdf">Limpar tudo</button>
+      <button class="primary" id="btn-word2pdf">Converter para PDF</button>
+    </div>
+
+    <div class="status" id="status-word2pdf"></div>
+  </div>
+
+  <!-- ============ EXCEL -> PDF ============ -->
+  <div class="panel" id="panel-excel2pdf">
+    <p class="tool-desc">Converte planilhas .xlsx/.xls/.csv em PDF, com cada aba da planilha virando uma seção do documento.</p>
+
+    <div class="drop" id="drop-excel2pdf">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15V4M12 4L7 9M12 4l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <p class="big">Arraste suas planilhas aqui</p>
+      <p class="small">ou clique para escolher os arquivos (.xlsx, .xls, .csv)</p>
+      <input type="file" id="file-excel2pdf" accept=".xlsx,.xls,.csv" multiple>
+    </div>
+
+    <div class="list" id="list-excel2pdf"></div>
+
+    <div class="actions" id="actions-excel2pdf" style="display:none">
+      <button class="secondary" id="clear-excel2pdf">Limpar tudo</button>
+      <button class="primary" id="btn-excel2pdf">Converter para PDF</button>
+    </div>
+
+    <div class="status" id="status-excel2pdf"></div>
+  </div>
+
+  <!-- ============ COMPRESS ============ -->
+  <div class="panel" id="panel-compress">
+    <p class="tool-desc">Reduz o tamanho do PDF transformando cada página em uma imagem comprimida. Ótimo para PDFs escaneados ou cheios de imagens; PDFs que já são só texto podem não encolher muito. <strong>O texto deixa de ser selecionável/pesquisável</strong> no arquivo final.</p>
+
+    <div class="drop" id="drop-compress">
+      <div class="icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15V4M12 4L7 9M12 4l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <p class="big">Arraste seus PDFs aqui</p>
+      <p class="small">ou clique para escolher os arquivos</p>
+      <input type="file" id="file-compress" accept="application/pdf" multiple>
+    </div>
+
+    <div class="list" id="list-compress"></div>
+
+    <div class="quality-group" id="quality-group-compress">
+      <label class="quality-opt">
+        <input type="radio" name="compress-level" value="baixa" data-hint="Menor tamanho, qualidade mais baixa." checked>
+        Alta compressão
+      </label>
+      <label class="quality-opt">
+        <input type="radio" name="compress-level" value="media" data-hint="Bom equilíbrio entre tamanho e qualidade.">
+        Equilibrado
+      </label>
+      <label class="quality-opt">
+        <input type="radio" name="compress-level" value="alta" data-hint="Menos compressão, arquivo maior.">
+        Qualidade maior
+      </label>
+    </div>
+    <p class="quality-hint" id="quality-hint">Menor tamanho, qualidade mais baixa.</p>
+
+    <div class="actions" id="actions-compress" style="display:none">
+      <button class="secondary" id="clear-compress">Limpar tudo</button>
+      <button class="primary" id="btn-compress">Comprimir PDF</button>
+    </div>
+
+    <div class="status" id="status-compress"></div>
+  </div>
+
+  </div>
+  </div>
 
   <p class="footer-note">
-    Dica: arraste os itens da lista (☰) para reordenar antes de juntar. O arquivo final mantém essa ordem.
+    Todo o processamento acontece localmente no seu navegador — nenhum arquivo é enviado para servidores.
   </p>
 </div>
 
 <script>
 const { PDFDocument } = PDFLib;
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-const drop = document.getElementById('drop');
-const fileInput = document.getElementById('fileInput');
-const listEl = document.getElementById('list');
-const actionsEl = document.getElementById('actions');
-const statusEl = document.getElementById('status');
-const mergeBtn = document.getElementById('mergeBtn');
-const clearBtn = document.getElementById('clearBtn');
-
-let files = []; // { id, file, name, pageCount }
-let dragSrcIndex = null;
-
-drop.addEventListener('click', () => fileInput.click());
-drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
-drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
-drop.addEventListener('drop', e => {
-  e.preventDefault();
-  drop.classList.remove('drag');
-  handleFiles(e.dataTransfer.files);
-});
-fileInput.addEventListener('change', e => handleFiles(e.target.files));
-
-async function handleFiles(fileList) {
-  const pdfFiles = Array.from(fileList).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
-  if (pdfFiles.length === 0) return;
-  setStatus(`Lendo ${pdfFiles.length} arquivo(s)...`);
-  for (const file of pdfFiles) {
-    try {
-      const buf = await file.arrayBuffer();
-      const doc = await PDFDocument.load(buf, { ignoreEncryption: true });
-      files.push({
-        id: crypto.randomUUID(),
-        file,
-        buf,
-        name: file.name,
-        pageCount: doc.getPageCount()
-      });
-    } catch (err) {
-      setStatus(`Erro ao ler "${file.name}": arquivo inválido ou protegido.`, true);
-    }
-  }
-  fileInput.value = '';
-  render();
-  setStatus(`${files.length} arquivo(s) na lista.`);
-}
-
-function render() {
-  listEl.innerHTML = '';
-  files.forEach((f, i) => {
-    const item = document.createElement('div');
-    item.className = 'item';
-    item.draggable = true;
-    item.dataset.index = i;
-
-    item.innerHTML = `
-      <span class="handle">☰</span>
-      <span class="idx">${i + 1}</span>
-      <span class="name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
-      <span class="pages">${f.pageCount} pág.</span>
-      <button class="rm" data-id="${f.id}" title="Remover">✕</button>
-    `;
-
-    item.addEventListener('dragstart', () => {
-      dragSrcIndex = i;
-      item.classList.add('dragging');
-    });
-    item.addEventListener('dragend', () => item.classList.remove('dragging'));
-    item.addEventListener('dragover', e => e.preventDefault());
-    item.addEventListener('drop', e => {
-      e.preventDefault();
-      const targetIndex = i;
-      if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
-      const moved = files.splice(dragSrcIndex, 1)[0];
-      files.splice(targetIndex, 0, moved);
-      dragSrcIndex = null;
-      render();
-    });
-
-    item.querySelector('.rm').addEventListener('click', () => {
-      files = files.filter(x => x.id !== f.id);
-      render();
-      setStatus(`${files.length} arquivo(s) na lista.`);
-    });
-
-    listEl.appendChild(item);
-  });
-
-  actionsEl.style.display = files.length > 0 ? 'flex' : 'none';
-  mergeBtn.disabled = files.length < 2;
-}
-
-clearBtn.addEventListener('click', () => {
-  files = [];
-  render();
-  setStatus('');
-});
-
-mergeBtn.addEventListener('click', async () => {
-  if (files.length < 2) return;
-  mergeBtn.disabled = true;
-  setStatus('Juntando PDFs...');
-  try {
-    const merged = await PDFDocument.create();
-    for (const f of files) {
-      const doc = await PDFDocument.load(f.buf, { ignoreEncryption: true });
-      const pages = await merged.copyPages(doc, doc.getPageIndices());
-      pages.forEach(p => merged.addPage(p));
-    }
-    const bytes = await merged.save();
-    const blob = new Blob([bytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'documentos-unidos.pdf';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    setStatus(`Pronto! PDF final com ${merged.getPageCount()} páginas baixado.`);
-  } catch (err) {
-    console.error(err);
-    setStatus('Erro ao juntar os PDFs. Verifique se todos os arquivos são válidos.', true);
-  }
-  mergeBtn.disabled = files.length < 2;
-});
-
-function setStatus(msg, isErr) {
-  statusEl.textContent = msg;
-  statusEl.className = 'status' + (isErr ? ' err' : '');
-}
+/* ---------------- Shared helpers ---------------- */
 
 function escapeHtml(str) {
   const d = document.createElement('div');
   d.textContent = str;
   return d.innerHTML;
 }
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function downloadAll(results, zipName) {
+  if (results.length === 0) return;
+  if (results.length === 1) {
+    triggerDownload(results[0].blob, results[0].name);
+    return;
+  }
+  const zip = new JSZip();
+  results.forEach(r => zip.file(r.name, r.blob));
+  const content = await zip.generateAsync({ type: 'blob' });
+  triggerDownload(content, zipName);
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+/* Groups pdf.js text items into lines by their vertical position */
+function groupTextIntoLines(items) {
+  const rows = [];
+  const tol = 3;
+  items.forEach(it => {
+    const y = it.transform[5];
+    let row = rows.find(r => Math.abs(r.y - y) < tol);
+    if (!row) { row = { y, items: [] }; rows.push(row); }
+    row.items.push(it);
+  });
+  rows.sort((a, b) => b.y - a.y);
+  return rows.map(r => {
+    r.items.sort((a, b) => a.transform[4] - b.transform[4]);
+    return r.items.map(it => it.str).join(' ').replace(/\s+/g, ' ').trim();
+  }).filter(l => l.length > 0);
+}
+
+/* Groups pdf.js text items into rows of cells, splitting columns on horizontal gaps */
+function groupTextIntoRowsWithCells(items) {
+  const tol = 3;
+  const gapThreshold = 8;
+  const rowsMap = [];
+  items.forEach(it => {
+    const y = it.transform[5];
+    let row = rowsMap.find(r => Math.abs(r.y - y) < tol);
+    if (!row) { row = { y, items: [] }; rowsMap.push(row); }
+    row.items.push(it);
+  });
+  rowsMap.sort((a, b) => b.y - a.y);
+  return rowsMap.map(r => {
+    r.items.sort((a, b) => a.transform[4] - b.transform[4]);
+    const cells = [];
+    let current = '';
+    let lastEndX = null;
+    r.items.forEach(it => {
+      const x = it.transform[4];
+      const width = it.width || (it.str.length * 4);
+      if (lastEndX !== null && (x - lastEndX) > gapThreshold) {
+        cells.push(current.trim());
+        current = it.str;
+      } else {
+        current += (current ? ' ' : '') + it.str;
+      }
+      lastEndX = x + width;
+    });
+    if (current) cells.push(current.trim());
+    return cells;
+  }).filter(row => row.length > 0);
+}
+
+/* ---------------- Generic single/multi-file conversion tool ---------------- */
+
+function setupSimpleTool({ suffix, accept, convert, outExt, onBeforeConvert }) {
+  const drop = document.getElementById('drop-' + suffix);
+  const input = document.getElementById('file-' + suffix);
+  const list = document.getElementById('list-' + suffix);
+  const actions = document.getElementById('actions-' + suffix);
+  const status = document.getElementById('status-' + suffix);
+  const btn = document.getElementById('btn-' + suffix);
+  const clearBtn = document.getElementById('clear-' + suffix);
+  let items = [];
+
+  function setStatus(msg, err) {
+    status.textContent = msg;
+    status.className = 'status' + (err ? ' err' : '');
+  }
+
+  drop.addEventListener('click', () => input.click());
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('drag'); addFiles(e.dataTransfer.files); });
+  input.addEventListener('change', e => { addFiles(e.target.files); input.value = ''; });
+
+  function addFiles(fileList) {
+    const arr = Array.from(fileList).filter(f => accept(f));
+    if (arr.length === 0) return;
+    arr.forEach(f => items.push({ id: crypto.randomUUID(), file: f }));
+    render();
+    setStatus(`${items.length} arquivo(s) na lista.`);
+  }
+
+  function render() {
+    list.innerHTML = '';
+    items.forEach((it, i) => {
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `
+        <span class="doc-icon"><svg viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 1h7l4.5 4.5V18a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.3"/><path d="M9 1v4.5h4.5" stroke="currentColor" stroke-width="1.3"/></svg></span>
+        <span class="name" title="${escapeHtml(it.file.name)}">${escapeHtml(it.file.name)}</span>
+        <span class="pages">${formatBytes(it.file.size)}</span>
+        <button class="rm" title="Remover">✕</button>
+      `;
+      div.querySelector('.rm').addEventListener('click', () => {
+        items = items.filter(x => x.id !== it.id);
+        render();
+        setStatus(`${items.length} arquivo(s) na lista.`);
+      });
+      list.appendChild(div);
+    });
+    actions.style.display = items.length > 0 ? 'flex' : 'none';
+    btn.disabled = items.length === 0;
+  }
+
+  clearBtn.addEventListener('click', () => { items = []; render(); setStatus(''); });
+
+  btn.addEventListener('click', async () => {
+    if (items.length === 0) return;
+    btn.disabled = true;
+    if (onBeforeConvert) onBeforeConvert();
+    const results = [];
+    let totalOrig = 0;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      setStatus(`Convertendo ${i + 1}/${items.length}: ${it.file.name}...`);
+      try {
+        const blob = await convert(it.file);
+        const base = it.file.name.replace(/\.[^.]+$/, '');
+        results.push({ name: base + outExt, blob, origSize: it.file.size });
+        totalOrig += it.file.size;
+      } catch (err) {
+        console.error(err);
+        setStatus(`Erro ao converter "${it.file.name}". Pulando este arquivo.`, true);
+        await new Promise(r => setTimeout(r, 900));
+      }
+    }
+    if (results.length > 0) {
+      setStatus('Preparando download...');
+      await downloadAll(results, 'arquivos-convertidos.zip');
+      const totalOut = results.reduce((s, r) => s + r.blob.size, 0);
+      const sizeNote = (suffix === 'compress')
+        ? ` (${formatBytes(totalOrig)} → ${formatBytes(totalOut)})`
+        : '';
+      setStatus(`Pronto! ${results.length} de ${items.length} arquivo(s) convertido(s).${sizeNote}`);
+    } else {
+      setStatus('Nenhum arquivo pôde ser convertido.', true);
+    }
+    btn.disabled = false;
+  });
+}
+
+/* ---------------- MERGE tool (original behavior) ---------------- */
+
+(function setupMerge() {
+  const drop = document.getElementById('drop-merge');
+  const fileInput = document.getElementById('file-merge');
+  const listEl = document.getElementById('list-merge');
+  const actionsEl = document.getElementById('actions-merge');
+  const statusEl = document.getElementById('status-merge');
+  const mergeBtn = document.getElementById('btn-merge');
+  const clearBtn = document.getElementById('clear-merge');
+
+  let files = [];
+  let dragSrcIndex = null;
+
+  function setStatus(msg, isErr) {
+    statusEl.textContent = msg;
+    statusEl.className = 'status' + (isErr ? ' err' : '');
+  }
+
+  drop.addEventListener('click', () => fileInput.click());
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault();
+    drop.classList.remove('drag');
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+  async function handleFiles(fileList) {
+    const pdfFiles = Array.from(fileList).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+    if (pdfFiles.length === 0) return;
+    setStatus(`Lendo ${pdfFiles.length} arquivo(s)...`);
+    for (const file of pdfFiles) {
+      try {
+        const buf = await file.arrayBuffer();
+        const doc = await PDFDocument.load(buf, { ignoreEncryption: true });
+        files.push({
+          id: crypto.randomUUID(),
+          file,
+          buf,
+          name: file.name,
+          pageCount: doc.getPageCount()
+        });
+      } catch (err) {
+        setStatus(`Erro ao ler "${file.name}": arquivo inválido ou protegido.`, true);
+      }
+    }
+    fileInput.value = '';
+    render();
+    setStatus(`${files.length} arquivo(s) na lista.`);
+  }
+
+  function render() {
+    listEl.innerHTML = '';
+    files.forEach((f, i) => {
+      const item = document.createElement('div');
+      item.className = 'item';
+      item.draggable = true;
+      item.dataset.index = i;
+
+      item.innerHTML = `
+        <span class="handle">☰</span>
+        <span class="idx">${i + 1}</span>
+        <span class="name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+        <span class="pages">${f.pageCount} pág.</span>
+        <button class="rm" data-id="${f.id}" title="Remover">✕</button>
+      `;
+
+      item.addEventListener('dragstart', () => {
+        dragSrcIndex = i;
+        item.classList.add('dragging');
+      });
+      item.addEventListener('dragend', () => item.classList.remove('dragging'));
+      item.addEventListener('dragover', e => e.preventDefault());
+      item.addEventListener('drop', e => {
+        e.preventDefault();
+        const targetIndex = i;
+        if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
+        const moved = files.splice(dragSrcIndex, 1)[0];
+        files.splice(targetIndex, 0, moved);
+        dragSrcIndex = null;
+        render();
+      });
+
+      item.querySelector('.rm').addEventListener('click', () => {
+        files = files.filter(x => x.id !== f.id);
+        render();
+        setStatus(`${files.length} arquivo(s) na lista.`);
+      });
+
+      listEl.appendChild(item);
+    });
+
+    actionsEl.style.display = files.length > 0 ? 'flex' : 'none';
+    mergeBtn.disabled = files.length < 2;
+  }
+
+  clearBtn.addEventListener('click', () => {
+    files = [];
+    render();
+    setStatus('');
+  });
+
+  mergeBtn.addEventListener('click', async () => {
+    if (files.length < 2) return;
+    mergeBtn.disabled = true;
+    setStatus('Juntando PDFs...');
+    try {
+      const merged = await PDFDocument.create();
+      for (const f of files) {
+        const doc = await PDFDocument.load(f.buf, { ignoreEncryption: true });
+        const pages = await merged.copyPages(doc, doc.getPageIndices());
+        pages.forEach(p => merged.addPage(p));
+      }
+      const bytes = await merged.save();
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      triggerDownload(blob, 'documentos-unidos.pdf');
+      setStatus(`Pronto! PDF final com ${merged.getPageCount()} páginas baixado.`);
+    } catch (err) {
+      console.error(err);
+      setStatus('Erro ao juntar os PDFs. Verifique se todos os arquivos são válidos.', true);
+    }
+    mergeBtn.disabled = files.length < 2;
+  });
+})();
+
+/* ---------------- PDF -> WORD ---------------- */
+
+setupSimpleTool({
+  suffix: 'pdf2word',
+  outExt: '.docx',
+  accept: f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'),
+  convert: async (file) => {
+    const buf = await file.arrayBuffer();
+    const doc = await pdfjsLib.getDocument({ data: buf }).promise;
+    let bodyHtml = '';
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      const lines = groupTextIntoLines(content.items);
+      const paraHtml = lines.length
+        ? lines.map(l => `<p>${escapeHtml(l)}</p>`).join('')
+        : '<p></p>';
+      bodyHtml += paraHtml;
+      if (p < doc.numPages) bodyHtml += '<p style="page-break-before:always;">&nbsp;</p>';
+    }
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${bodyHtml}</body></html>`;
+    return htmlDocx.asBlob(html);
+  }
+});
+
+/* ---------------- PDF -> EXCEL ---------------- */
+
+setupSimpleTool({
+  suffix: 'pdf2excel',
+  outExt: '.xlsx',
+  accept: f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'),
+  convert: async (file) => {
+    const buf = await file.arrayBuffer();
+    const doc = await pdfjsLib.getDocument({ data: buf }).promise;
+    const wb = XLSX.utils.book_new();
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      let rows = groupTextIntoRowsWithCells(content.items);
+      if (rows.length === 0) rows = [['']];
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      let sheetName = `Pagina ${p}`;
+      XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
+    }
+    const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    return new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+});
+
+/* ---------------- WORD -> PDF ---------------- */
+
+setupSimpleTool({
+  suffix: 'word2pdf',
+  outExt: '.pdf',
+  accept: f => f.name.toLowerCase().endsWith('.docx'),
+  convert: async (file) => {
+    const buf = await file.arrayBuffer();
+    const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-99999px';
+    container.style.top = '0';
+    container.style.width = '760px';
+    container.style.padding = '24px';
+    container.style.fontFamily = 'Georgia, serif';
+    container.style.fontSize = '12pt';
+    container.style.lineHeight = '1.5';
+    container.style.background = '#ffffff';
+    container.innerHTML = result.value || '<p></p>';
+    document.body.appendChild(container);
+    try {
+      const opt = {
+        margin: 24,
+        image: { type: 'jpeg', quality: 0.92 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' }
+      };
+      const worker = html2pdf().set(opt).from(container);
+      const blob = await worker.outputPdf('blob');
+      return blob;
+    } finally {
+      container.remove();
+    }
+  }
+});
+
+/* ---------------- EXCEL -> PDF ---------------- */
+
+setupSimpleTool({
+  suffix: 'excel2pdf',
+  outExt: '.pdf',
+  accept: f => /\.(xlsx|xls|csv)$/i.test(f.name),
+  convert: async (file) => {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-99999px';
+    container.style.top = '0';
+    container.style.width = '1000px';
+    container.style.padding = '20px';
+    container.style.fontFamily = 'Arial, sans-serif';
+    container.style.background = '#ffffff';
+
+    let html = '<style>table{border-collapse:collapse;width:100%;margin-bottom:20px;}td,th{border:1px solid #999;padding:4px 6px;font-size:9pt;text-align:left;}h3{font-family:Arial;font-size:12pt;margin:16px 0 8px;}</style>';
+    wb.SheetNames.forEach((name, idx) => {
+      const sheet = wb.Sheets[name];
+      const tableHtml = XLSX.utils.sheet_to_html(sheet, { editable: false });
+      html += `<h3>${escapeHtml(name)}</h3>${tableHtml}`;
+      if (idx < wb.SheetNames.length - 1) html += '<div style="page-break-after:always;"></div>';
+    });
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    try {
+      const opt = {
+        margin: 20,
+        image: { type: 'jpeg', quality: 0.92 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'pt', format: 'a4', orientation: 'landscape' }
+      };
+      const worker = html2pdf().set(opt).from(container);
+      const blob = await worker.outputPdf('blob');
+      return blob;
+    } finally {
+      container.remove();
+    }
+  }
+});
+
+/* ---------------- COMPRESS ---------------- */
+
+setupSimpleTool({
+  suffix: 'compress',
+  outExt: '.pdf',
+  accept: f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'),
+  convert: async (file) => {
+    const level = document.querySelector('input[name="compress-level"]:checked').value;
+    const settings = {
+      baixa: { scale: 0.8, quality: 0.35 },
+      media: { scale: 1.1, quality: 0.55 },
+      alta: { scale: 1.5, quality: 0.75 }
+    }[level];
+
+    const buf = await file.arrayBuffer();
+    const srcDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+    const outDoc = await PDFDocument.create();
+
+    for (let p = 1; p <= srcDoc.numPages; p++) {
+      const page = await srcDoc.getPage(p);
+      const baseViewport = page.getViewport({ scale: 1 });
+      const viewport = page.getViewport({ scale: settings.scale });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(viewport.width));
+      canvas.height = Math.max(1, Math.round(viewport.height));
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      const jpegDataUrl = canvas.toDataURL('image/jpeg', settings.quality);
+      const jpgBytes = await (await fetch(jpegDataUrl)).arrayBuffer();
+      const jpgImage = await outDoc.embedJpg(jpgBytes);
+
+      const outPage = outDoc.addPage([baseViewport.width, baseViewport.height]);
+      outPage.drawImage(jpgImage, { x: 0, y: 0, width: baseViewport.width, height: baseViewport.height });
+    }
+
+    const bytes = await outDoc.save();
+    return new Blob([bytes], { type: 'application/pdf' });
+  }
+});
+
+/* ---------------- Compress quality hint ---------------- */
+
+(function setupQualityHint() {
+  const group = document.getElementById('quality-group-compress');
+  const hint = document.getElementById('quality-hint');
+  if (!group || !hint) return;
+  group.addEventListener('change', (e) => {
+    if (e.target.name === 'compress-level') hint.textContent = e.target.dataset.hint;
+  });
+})();
+
+/* ---------------- Tabs ---------------- */
+
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+});
 </script>
 </body>
 </html>
