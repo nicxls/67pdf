@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juntar PDFs</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --panel: #ffffff;
+    --ink: #1c1b19;
+    --muted: #6b6863;
+    --accent: #c1440e;
+    --accent-dark: #9c360a;
+    --border: #e3e0d8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+  }
+  .sub {
+    color: var(--muted);
+    margin: 0 0 28px;
+    font-size: 15px;
+  }
+  .drop {
+    background: var(--panel);
+    border: 2px dashed var(--border);
+    border-radius: 14px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .drop.drag {
+    border-color: var(--accent);
+    background: #fff6f0;
+  }
+  .drop p { margin: 6px 0; }
+  .drop .big { font-size: 16px; font-weight: 600; }
+  .drop .small { font-size: 13px; color: var(--muted); }
+  input[type=file] { display: none; }
+
+  .list {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .item {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .item .handle {
+    cursor: grab;
+    color: var(--muted);
+    font-size: 18px;
+    user-select: none;
+  }
+  .item .idx {
+    font-size: 12px;
+    color: #fff;
+    background: var(--accent);
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .item .name {
+    flex: 1;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .item .pages {
+    font-size: 12px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .item button.rm {
+    border: none;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+  }
+  .item button.rm:hover { color: var(--accent); }
+  .item.dragging { opacity: 0.4; }
+
+  .actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  button.primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 22px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    flex: 1;
+  }
+  button.primary:hover { background: var(--accent-dark); }
+  button.primary:disabled { background: #cfcdc7; cursor: not-allowed; }
+  button.secondary {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  button.secondary:hover { border-color: var(--muted); }
+
+  .status {
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--muted);
+    min-height: 18px;
+  }
+  .status.err { color: var(--accent); }
+
+  .footer-note {
+    margin-top: 36px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Juntar PDFs</h1>
+  <p class="sub">Sem limite de arquivos.</p>
+
+  <div class="drop" id="drop">
+    <p class="big">Arraste seus PDFs aqui</p>
+    <p class="small">ou clique para escolher os arquivos</p>
+    <input type="file" id="fileInput" accept="application/pdf" multiple>
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <div class="actions" id="actions" style="display:none">
+    <button class="secondary" id="clearBtn">Limpar tudo</button>
+    <button class="primary" id="mergeBtn">Juntar e baixar PDF</button>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <p class="footer-note">
+    Dica: arraste os itens da lista (☰) para reordenar antes de juntar. O arquivo final mantém essa ordem.
+  </p>
+</div>
+
+<script>
+const { PDFDocument } = PDFLib;
+
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('fileInput');
+const listEl = document.getElementById('list');
+const actionsEl = document.getElementById('actions');
+const statusEl = document.getElementById('status');
+const mergeBtn = document.getElementById('mergeBtn');
+const clearBtn = document.getElementById('clearBtn');
+
+let files = []; // { id, file, name, pageCount }
+let dragSrcIndex = null;
+
+drop.addEventListener('click', () => fileInput.click());
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+drop.addEventListener('drop', e => {
+  e.preventDefault();
+  drop.classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+async function handleFiles(fileList) {
+  const pdfFiles = Array.from(fileList).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if (pdfFiles.length === 0) return;
+  setStatus(`Lendo ${pdfFiles.length} arquivo(s)...`);
+  for (const file of pdfFiles) {
+    try {
+      const buf = await file.arrayBuffer();
+      const doc = await PDFDocument.load(buf, { ignoreEncryption: true });
+      files.push({
+        id: crypto.randomUUID(),
+        file,
+        buf,
+        name: file.name,
+        pageCount: doc.getPageCount()
+      });
+    } catch (err) {
+      setStatus(`Erro ao ler "${file.name}": arquivo inválido ou protegido.`, true);
+    }
+  }
+  fileInput.value = '';
+  render();
+  setStatus(`${files.length} arquivo(s) na lista.`);
+}
+
+function render() {
+  listEl.innerHTML = '';
+  files.forEach((f, i) => {
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.draggable = true;
+    item.dataset.index = i;
+
+    item.innerHTML = `
+      <span class="handle">☰</span>
+      <span class="idx">${i + 1}</span>
+      <span class="name" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</span>
+      <span class="pages">${f.pageCount} pág.</span>
+      <button class="rm" data-id="${f.id}" title="Remover">✕</button>
+    `;
+
+    item.addEventListener('dragstart', () => {
+      dragSrcIndex = i;
+      item.classList.add('dragging');
+    });
+    item.addEventListener('dragend', () => item.classList.remove('dragging'));
+    item.addEventListener('dragover', e => e.preventDefault());
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      const targetIndex = i;
+      if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
+      const moved = files.splice(dragSrcIndex, 1)[0];
+      files.splice(targetIndex, 0, moved);
+      dragSrcIndex = null;
+      render();
+    });
+
+    item.querySelector('.rm').addEventListener('click', () => {
+      files = files.filter(x => x.id !== f.id);
+      render();
+      setStatus(`${files.length} arquivo(s) na lista.`);
+    });
+
+    listEl.appendChild(item);
+  });
+
+  actionsEl.style.display = files.length > 0 ? 'flex' : 'none';
+  mergeBtn.disabled = files.length < 2;
+}
+
+clearBtn.addEventListener('click', () => {
+  files = [];
+  render();
+  setStatus('');
+});
+
+mergeBtn.addEventListener('click', async () => {
+  if (files.length < 2) return;
+  mergeBtn.disabled = true;
+  setStatus('Juntando PDFs...');
+  try {
+    const merged = await PDFDocument.create();
+    for (const f of files) {
+      const doc = await PDFDocument.load(f.buf, { ignoreEncryption: true });
+      const pages = await merged.copyPages(doc, doc.getPageIndices());
+      pages.forEach(p => merged.addPage(p));
+    }
+    const bytes = await merged.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'documentos-unidos.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setStatus(`Pronto! PDF final com ${merged.getPageCount()} páginas baixado.`);
+  } catch (err) {
+    console.error(err);
+    setStatus('Erro ao juntar os PDFs. Verifique se todos os arquivos são válidos.', true);
+  }
+  mergeBtn.disabled = files.length < 2;
+});
+
+function setStatus(msg, isErr) {
+  statusEl.textContent = msg;
+  statusEl.className = 'status' + (isErr ? ' err' : '');
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>
